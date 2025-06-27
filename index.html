@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Tiro con Reflexión - Billar</title>
+  <style>
+    body { font-family: Arial; background: #1a1a1a; color: #fff; text-align: center; }
+    canvas { background: #245c2b; border: 5px solid #333; margin-top: 20px; }
+    h1 { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Simulador de Billar con Reflexión</h1>
+  <canvas id="billarCanvas" width="800" height="400"></canvas>
+  <p>Arrastra las bolas para cambiar sus posiciones.</p>
+
+  <script>
+    const canvas = document.getElementById('billarCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const BALL_RADIUS = 10;
+    const y_banda = 20; // banda superior (en píxeles desde arriba)
+
+    let bolaA = { x: 150, y: 300, dragging: false, color: 'white' };
+    let bolaB = { x: 650, y: 100, dragging: false, color: 'red' };
+
+    function drawTable() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dibujar banda superior
+      ctx.fillStyle = '#003300';
+      ctx.fillRect(0, 0, canvas.width, y_banda);
+
+      // Dibujar bolas
+      [bolaA, bolaB].forEach(ball => {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = ball.color;
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+      });
+
+      drawTrajectory();
+    }
+
+    function drawTrajectory() {
+      // Punto de reflexión sobre la banda superior
+      let x_w = bolaA.x;
+      let y_w = bolaA.y;
+      let x_t = bolaB.x;
+      let y_t = bolaB.y;
+      let y_b = y_banda + BALL_RADIUS;
+
+      if (y_t !== y_w) {
+        let x_r = ((y_b - y_w) * x_t + (y_t - y_b) * x_w) / (y_t - y_w);
+        let y_r = y_b;
+
+        // Línea de entrada (blanca → punto de reflexión)
+        ctx.beginPath();
+        ctx.moveTo(x_w, y_w);
+        ctx.lineTo(x_r, y_r);
+        ctx.strokeStyle = 'yellow';
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Línea de salida (punto de reflexión → bola objetivo)
+        ctx.beginPath();
+        ctx.moveTo(x_r, y_r);
+        ctx.lineTo(x_t, y_t);
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'cyan';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Dibujar punto de reflexión
+        ctx.beginPath();
+        ctx.arc(x_r, y_r, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+      }
+    }
+
+    function isInsideBall(x, y, ball) {
+      const dx = x - ball.x;
+      const dy = y - ball.y;
+      return dx * dx + dy * dy <= BALL_RADIUS * BALL_RADIUS;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      [bolaA, bolaB].forEach(ball => {
+        if (isInsideBall(x, y, ball)) {
+          ball.dragging = true;
+        }
+      });
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      [bolaA, bolaB].forEach(ball => {
+        if (ball.dragging) {
+          ball.x = x;
+          ball.y = y;
+          drawTable();
+        }
+      });
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      bolaA.dragging = false;
+      bolaB.dragging = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      bolaA.dragging = false;
+      bolaB.dragging = false;
+    });
+
+    drawTable();
+  </script>
+</body>
+</html>
